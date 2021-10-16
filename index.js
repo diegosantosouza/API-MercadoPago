@@ -4,14 +4,14 @@ const app = express();
 
 MercadoPago.configure({
     sandbox: true,
-    access_token: 'TEST-5061271990683571-100513-42743ebd44c1ac16ba21dd4e70d6bc31-33697405'
+    access_token: 'YOUR_ACCESS_TOKEN' //Set your access_token
 });
 
 app.get('/', (req, res) => {
     res.send('ok');
 })
 
-var id = ''+Date.now();
+var id = '' + Date.now();
 var emailDoPagador = 'diego@gmail.com';
 
 app.get('/pagar', async (req, res) => {
@@ -25,19 +25,43 @@ app.get('/pagar', async (req, res) => {
                 unit_price: parseFloat(150)
             }
         ],
-        payer:{
+        payer: {
             email: emailDoPagador
         },
         external_reference: id,
     }
     try {
         var pagamento = await MercadoPago.preferences.create(dados);
-        console.log(pagamento);
         return res.redirect(pagamento.body.init_point);
-    }catch (err) {
+    } catch (err) {
         return res.send(err.message);
     }
-    
+
+})
+
+app.post('/not', (req, res) => {
+    var id = req.query.id;
+    setTimeout(() => {
+        var filter = {
+            'order.id': id,
+        }
+        MercadoPago.payment.search({
+            qs: filter,
+        }).then(data => {
+            var pagamento = data.body.results[0];
+
+            if (pagamento != undefined) {
+                console.log(pagamento);
+                console.log(pagamento.external_reference);
+                console.log(pagamento.status); //approved or reproved
+            } else {
+                console.log('Pagamento não existe');
+            }
+        }).catch(err => {
+            console.log(err);
+        })
+    }, 10000);
+    res.send('ok');
 })
 
 app.listen(3000, () => console.log('Servidor rodando'));
